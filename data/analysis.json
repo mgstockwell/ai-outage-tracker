@@ -1,0 +1,38 @@
+{
+ "data_through": "2026-11-16",
+ "data_through_label": "November 16, 2026",
+ "incidents": 56,
+ "first_year": 2018,
+ "eras": {
+  "Pre-AI": {
+   "incidents": 19,
+   "disclosed": 10,
+   "undisclosed": 9,
+   "self_share": 70,
+   "vendor_share": 0
+  },
+  "AI era": {
+   "incidents": 37,
+   "disclosed": 15,
+   "undisclosed": 22,
+   "self_share": 73,
+   "vendor_share": 27
+  }
+ },
+ "largest": {
+  "service": "AWS us-east-1",
+  "date": "2025-10-20",
+  "date_label": "Oct 20, 2025",
+  "reports": 17000000,
+  "reports_label": "17 million"
+ },
+ "headline": "Not in how often they happen, but in how far they reach.",
+ "summary": "This set of 56 major consumer-facing outages (2018 to Nov 2026) can't count how often outages happen, but it shows what causes them and how far they spread. Among outages with a disclosed cause, 70% before ChatGPT's launch and 73% since were a company's own change or software bug: about the same. What's new is concentration: 27% of explained outages since the launch came from a shared vendor or provider, up from 0%, so one failure can take down banks, carriers and apps at once. The largest single event is AWS us-east-1 on Oct 20, 2025, with 17 million Downdetector reports.",
+ "findings": [
+  "Among outages with a disclosed cause, 70% before ChatGPT's launch and 73% since were a company's own change or software bug: about the same.",
+  "What's new is concentration: 27% of explained outages since the launch came from a shared vendor or provider, up from 0%, so one failure can take down banks, carriers and apps at once.",
+  "The biggest yearly outage since 2023, AWS in 2025 with 17 million reports, is bigger than the biggest before it, Meta (Facebook) in 2021 with 10.6 million. Downdetector's growing audience accounts for part of any rise."
+ ],
+ "yearly_title": "The biggest outage of each year is getting bigger",
+ "causes_title": "Root causes barely changed, except vendors"
+}

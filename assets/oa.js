@@ -12,28 +12,6 @@ window.oaFmtH = (h) => h == null ? '—' : h < 1 ? Math.round(h * 60) + ' min' :
 // Legend swatches: set css vars from dash.colors on the root (style only).
 document.querySelectorAll('.oa').forEach((el) => { dash.colors.slice(0, 5).forEach((c, i) => el.style.setProperty('--dash-c' + i, c)); });
 
-dash.calc('total', {
-  title: 'Outages in the set',
-  description: 'Number of outages in the curated list.',
-  inputs: ['outages'],
-  fn: (outages) => outages.length,
-});
-
-dash.calc('summary', {
-  title: 'Cause shares by era',
-  description: "For each era, the share of outages with a disclosed cause that were the company's own change or bug, or a third-party vendor.",
-  inputs: ['outages'],
-  fn: (outages) => ['Pre-AI', 'AI era'].map((era) => {
-    const rows = outages.filter((r) => r.era === era);
-    const known = rows.filter((r) => r.cause_type !== 'Not disclosed');
-    const self = known.filter((r) => ['Change / config error', 'Software bug', 'Change / migration'].includes(r.cause_type)).length;
-    const vendor = known.filter((r) => r.cause_type === 'Third-party / vendor').length;
-    return { era, incidents: rows.length, disclosed: known.length, undisclosed: rows.length - known.length,
-      self_share: known.length ? Math.round(100 * self / known.length) : null,
-      vendor_share: known.length ? Math.round(100 * vendor / known.length) : null };
-  }),
-});
-
 dash.calc('causeMix', {
   title: 'Cause mix by era',
   description: 'Count and share of each disclosed root cause, before and during the AI era.',
@@ -65,17 +43,24 @@ const oaSimple = (name, src, fn) => dash.draw(name, (el) => {
   if (d.status !== 'ok' || d.data == null) { el.textContent = d.status === 'error' ? 'Failed to load' : '—'; return; }
   el.textContent = fn(d.data);
 });
-oaSimple('total', 'total', (n) => String(n));
-oaSimple('largest-n', 'yearly', (rows) => { const r = rows.find((x) => +x.year === 2025); return r ? String(r.reports_millions) : '—'; });
-oaSimple('largest-who', 'yearly', (rows) => { const r = rows.find((x) => +x.year === 2025); return r ? r.service : '—'; });
-const oaEra = (era, f, suffix) => (rows) => { const r = rows.find((x) => x.era === era); return r && r[f] != null ? r[f] + (suffix || '') : '—'; };
-oaSimple('self-pre', 'summary', oaEra('Pre-AI', 'self_share', '%'));
-oaSimple('self-post', 'summary', oaEra('AI era', 'self_share', '%'));
-oaSimple('vendor-pre', 'summary', oaEra('Pre-AI', 'vendor_share', '%'));
-oaSimple('vendor-post', 'summary', oaEra('AI era', 'vendor_share', '%'));
-oaSimple('undisc-pre', 'summary', oaEra('Pre-AI', 'undisclosed'));
-oaSimple('undisc-post', 'summary', oaEra('AI era', 'undisclosed'));
-
+// Findings text and headline numbers come from data/analysis.json, written by scripts/build_data.py.
+const oaA = (fn) => (a) => { try { const v = fn(a); return v == null ? '\u2014' : String(v); } catch (e) { return '\u2014'; } };
+const oaShort = (n) => n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);
+oaSimple('a-headline', 'analysis', oaA((a) => a.headline));
+oaSimple('a-summary', 'analysis', oaA((a) => a.summary));
+oaSimple('a-yearly-title', 'analysis', oaA((a) => a.yearly_title));
+oaSimple('a-causes-title', 'analysis', oaA((a) => a.causes_title));
+oaSimple('a-through', 'analysis', oaA((a) => a.data_through_label));
+oaSimple('a-largest-n', 'analysis', oaA((a) => a.largest && oaShort(a.largest.reports)));
+oaSimple('a-largest-who', 'analysis', oaA((a) => a.largest && a.largest.service));
+oaSimple('a-largest-date', 'analysis', oaA((a) => a.largest && a.largest.date_label));
+const oaEraPct = (era, f, suffix) => oaA((a) => a.eras[era][f] == null ? null : a.eras[era][f] + (suffix || ''));
+oaSimple('self-pre', 'analysis', oaEraPct('Pre-AI', 'self_share', '%'));
+oaSimple('self-post', 'analysis', oaEraPct('AI era', 'self_share', '%'));
+oaSimple('vendor-pre', 'analysis', oaEraPct('Pre-AI', 'vendor_share', '%'));
+oaSimple('vendor-post', 'analysis', oaEraPct('AI era', 'vendor_share', '%'));
+oaSimple('undisc-pre', 'analysis', oaEraPct('Pre-AI', 'undisclosed'));
+oaSimple('undisc-post', 'analysis', oaEraPct('AI era', 'undisclosed'));
 
 // Tooltip helper inside a chart element.
 window.oaTip = (el) => {

@@ -1,8 +1,8 @@
 name: Validate data
 
+# Checks pull requests. Pushes to main are handled by rebuild-analysis.yml,
+# which regenerates the files instead of failing.
 on:
-  push:
-    paths: ["data/**", "scripts/**", "tests/**"]
   pull_request:
     paths: ["data/**", "scripts/**", "tests/**"]
 

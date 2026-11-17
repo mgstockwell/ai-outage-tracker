@@ -70,5 +70,27 @@ class BuildData(unittest.TestCase):
         self.assertTrue(all(r["era"] in ("Pre-AI", "AI era") for r in data))
 
 
+class Analysis(unittest.TestCase):
+    def _row(self, date, cause, reports=None):
+        return {"date": date, "service": "X", "era": "AI era" if date >= "2022-11-30" else "Pre-AI", "cause_type": cause,
+                "reports": reports, "reports_type": "Total (Downdetector)" if reports else None}
+
+    def test_rules_follow_the_data(self):
+        import build_data as b
+        yearly = [{"year": 2021, "service": "A", "reports_millions": 10}, {"year": 2025, "service": "B", "reports_millions": 5}]
+        # self-inflicted share jumps from 0% to 100%: headline and titles must say so
+        rows = [self._row("2019-01-01", "Hardware / power"), self._row("2024-01-01", "Software bug", 5_000_000)]
+        a = b.build_analysis(rows, yearly)
+        self.assertEqual(a["headline"], "Companies' own changes and bugs are a growing share of outages.")
+        self.assertEqual(a["causes_title"], "The mix of root causes has shifted")
+        self.assertEqual(a["yearly_title"], "The biggest outage of each year is getting smaller")
+        self.assertEqual(a["largest"]["reports_label"], "5 million")
+        self.assertEqual(a["eras"]["AI era"]["self_share"], 100)
+
+    def test_current_dataset_findings(self):
+        a = json.loads((ROOT / "data" / "analysis.json").read_text())
+        self.assertEqual(a["incidents"], len(json.loads((ROOT / "data" / "outages.json").read_text())))
+
+
 if __name__ == "__main__":
     unittest.main()
