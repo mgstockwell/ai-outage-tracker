@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Are outages getting worse in the AI era? (2018–2026)</title>
+<meta name="description" content="Curated dataset and dashboard of major consumer outages (banks, payments, carriers, social, cloud, AI) from 2018–2026.">
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/oa.css">
+</head>
+<body>
+<div class="oa">
+  <header id="top">
+    <h1>Are outages getting worse in the AI era?</h1>
+    <p class="lede">Short answer: <b>not in how often they happen, but in how far they reach.</b> This set of <span class="num" data-draw="total" data-source="total">—</span> major consumer-facing outages (2018 – Nov 2026) shows the same root causes before and after ChatGPT's launch in November 2022, mostly changes and software bugs a company made to its own systems. What's new is concentration: the single biggest Downdetector events now come from shared providers (AWS, Cloudflare, CrowdStrike, banking processors), so one failure takes down banks, carriers and apps at once.</p>
+  </header>
+
+  <section class="tiles" id="kpis">
+    <div class="tile" id="kpi-largest">
+      <div class="lbl">Largest outage in this set</div>
+      <div class="big"><span data-draw="largest-n" data-source="yearly" data-field="reports_millions" data-where="year=2025">—</span>M</div>
+      <div class="note">Downdetector reports, <span data-draw="largest-who" data-source="yearly" data-field="service" data-where="year=2025">—</span>, Oct 20 2025</div>
+    </div>
+    <div class="tile" id="kpi-self">
+      <div class="lbl">Caused by the company's own change or bug<br>(share of outages with a disclosed cause)</div>
+      <div class="pair">
+        <div><small>Before AI era</small><span class="big" data-draw="self-pre" data-source="summary" data-field="self_share" data-where="era=Pre-AI">—</span></div>
+        <div><small>AI era</small><span class="big" data-draw="self-post" data-source="summary" data-field="self_share" data-where="era=AI era">—</span></div>
+      </div>
+    </div>
+    <div class="tile" id="kpi-vendor">
+      <div class="lbl">Caused by a third-party vendor or shared provider<br>(share of outages with a disclosed cause)</div>
+      <div class="pair">
+        <div><small>Before AI era</small><span class="big" data-draw="vendor-pre" data-source="summary" data-field="vendor_share" data-where="era=Pre-AI">—</span></div>
+        <div><small>AI era</small><span class="big" data-draw="vendor-post" data-source="summary" data-field="vendor_share" data-where="era=AI era">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="callout" id="context">
+    Independent check: Uptime Institute's <a href="https://intelligence.uptimeinstitute.com/resource/annual-outage-analysis-2026" target="_blank" rel="noopener">2026 Annual Outage Analysis</a> finds that outage frequency per data-center site has declined for the fifth year in a row, while the cost of each major outage keeps rising. Downdetector itself only publishes yearly "largest outage" lists, so it can't be used to count outages over time.
+  </section>
+
+  <section class="card" id="timeline-card">
+    <h2>Every outage in the set, by industry</h2>
+    <p class="sub">Each circle is one outage. Size shows its impact; color shows its root cause. The dashed line marks ChatGPT's public launch (Nov 30, 2022). Hollow dots have no figure for the selected measure. Point at a circle for details.</p>
+    <div class="ctl">
+      <span>Size by</span>
+      <span class="seg" id="sizeby"><button type="button" data-v="reports" aria-pressed="true">Downdetector reports</button><button type="button" data-v="duration" aria-pressed="false">Duration (hours)</button></span>
+      <label>Industry <select class="dash-select" id="catsel" aria-label="Industry">
+        <option value="">All industries</option>
+        <option>Banking</option>
+        <option>Payments &amp; commerce</option>
+        <option>Cell &amp; ISP</option>
+        <option>Social &amp; streaming</option>
+        <option>Cloud &amp; infrastructure</option>
+        <option>AI services</option>
+      </select></label>
+    </div>
+    <div class="chart" data-draw="timeline" data-source="outages" style="min-height:340px"></div>
+    <div class="legend" id="cause-legend">
+      <span><span class="sw" style="background:var(--dash-c0)"></span>Change / config error</span>
+      <span><span class="sw" style="background:var(--dash-c1)"></span>Software bug</span>
+      <span><span class="sw" style="background:var(--dash-c2)"></span>Hardware / power</span>
+      <span><span class="sw" style="background:var(--dash-c3)"></span>Third-party / vendor</span>
+      <span><span class="sw" style="background:var(--dash-c4)"></span>Change / migration</span>
+      <span><span class="sw" style="background:var(--cds-chart-muted)"></span>Not disclosed</span>
+    </div>
+  </section>
+
+  <div class="two">
+    <section class="card" id="largest-card">
+      <h2>The biggest outage of each year keeps getting bigger</h2>
+      <p class="sub">Downdetector's largest single event per year, in millions of user reports. Report counts also grow as more people use Downdetector, so this measures reach, not frequency. 2020 has no published list; 2023, 2024 and 2026 (marked *) cover part of the year.</p>
+      <div class="chart" data-draw="yearly" data-source="yearly" style="min-height:260px"></div>
+    </section>
+
+    <section class="card" id="cause-card">
+      <h2>Root causes barely changed, except vendors</h2>
+      <p class="sub">Share of outages with a publicly disclosed cause. Outages with no disclosed cause are left out (<span class="num" data-draw="undisc-pre" data-source="summary" data-field="undisclosed" data-where="era=Pre-AI">—</span> before, <span class="num" data-draw="undisc-post" data-source="summary" data-field="undisclosed" data-where="era=AI era">—</span> in the AI era).</p>
+      <div class="chart" data-draw="causes" data-source="causeMix" style="min-height:200px"></div>
+    </section>
+  </div>
+
+  <section class="card" id="table-card">
+    <h2>All outages</h2>
+    <p class="sub">Newest first. "Total" reports are Ookla's full-event counts; "Peak" are the highest counts quoted in news coverage, which are much lower for the same event. The Industry filter above applies here too.</p>
+    <div class="tw">
+      <table data-source="outages" data-row-key="date,service">
+        <thead><tr><th data-field="date">Date</th><th data-field="service">Service</th><th data-field="category">Industry</th><th class="r" data-field="duration_hours">Hours</th><th class="r" data-field="reports">Reports</th><th data-field="reports_type">Type</th><th data-field="cause_type">Cause</th><th data-field="cause">Detail</th><th data-field="source">Source</th></tr></thead>
+        <tbody data-draw="table"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details id="method">
+    <summary>How this was built, and what it can't tell you</summary>
+    <ul>
+      <li><b>No raw Downdetector history.</b> Downdetector sells its archive through Ookla's paid Downdetector Explorer and does not publish it. This set is hand-curated from Ookla's yearly "largest outages" reports, regulator reports (FCC, CRTC, UK FCA), company post-mortems and news coverage. Each row links its source.</li>
+      <li><b>It can't count frequency.</b> The set covers major, widely reported outages, and recent years are much better documented (2025 alone has more entries than 2018–2021 combined). More rows in recent years mostly reflects more reporting, not more outages.</li>
+      <li><b>Report counts mix two measures.</b> Ookla's year-end lists give the total reports for a whole event; news stories usually give the peak count at one moment. They are labelled in the table and should not be compared directly.</li>
+      <li><b>"AI era"</b> starts with ChatGPT's public launch on Nov 30, 2022. Timing alone can't show that AI caused anything. Two real links exist: AI services such as ChatGPT are now a new kind of service that can go down, and AI workloads add power and capacity strain to data centers (a risk Uptime Institute flags).</li>
+      <li><b>Cause labels</b> follow the company's or regulator's own explanation. "Change / config error" and "Software bug" are the company's own systems; "Third-party / vendor" means a supplier or shared provider failed (for example FIS for Capital One, Fiserv for Zelle). Where the cause was only suspected, as with the Sept 2026 AI-chatbot outage, the row says so.</li>
+      <li>Gaming outages (PlayStation, Xbox, Roblox) are left out to keep the focus on everyday consumer platforms.</li>
+    </ul>
+  </details>
+  <p class="footer">Data: <a href="data/outages.csv">outages.csv</a> · <a href="data/yearly_largest.csv">yearly_largest.csv</a>, licensed <a href="data/LICENSE.md">CC BY 4.0</a>. Code: <a href="LICENSE">MIT</a>. Source and method: <a href="https://github.com/mgstockwell/ai-outage-tracker">github.com/mgstockwell/ai-outage-tracker</a>. Not affiliated with Downdetector or Ookla.</p>
+</div>
+<script src="vendor/d3.min.js"></script>
+<script src="assets/dash-shim.js"></script>
+<script src="assets/oa.js"></script>
+</body>
+</html>

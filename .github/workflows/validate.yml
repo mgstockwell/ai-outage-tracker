@@ -1,0 +1,20 @@
+name: Validate data
+
+on:
+  push:
+    paths: ["data/**", "scripts/**", "tests/**"]
+  pull_request:
+    paths: ["data/**", "scripts/**", "tests/**"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit tests (offline)
+        run: python -m unittest discover tests -v
+      - name: CSV is valid and JSON is up to date
+        run: python scripts/build_data.py --check

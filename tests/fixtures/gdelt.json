@@ -1,0 +1,7 @@
+{"articles":[
+ {"url":"https://www.example-news.com/verizon-outage?utm_source=x","title":"Verizon outage: more than 180,000 reports on Downdetector as calls fail","seendate":"20261114T153000Z","domain":"example-news.com"},
+ {"url":"https://another.example.org/verizon-down","title":"Verizon down for thousands of customers nationwide","seendate":"20261114T180000Z","domain":"another.example.org"},
+ {"url":"https://old.example.com/paypal","title":"PayPal outage hits users","seendate":"20261001T120000Z","domain":"old.example.com"},
+ {"url":"https://finance.example.com/chase-stock","title":"Chase shares down 2% after earnings call","seendate":"20261113T120000Z","domain":"finance.example.com"},
+ {"url":"https://local.example.com/car-chase","title":"Police chase ends in crash, power outage in town","seendate":"20261113T120000Z","domain":"local.example.com"}
+]}

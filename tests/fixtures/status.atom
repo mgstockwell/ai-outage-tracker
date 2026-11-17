@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Cloudflare Status</title>
+<entry><title>Elevated errors on Cloudflare dashboard and API</title><link href="https://www.cloudflarestatus.com/incidents/aaa"/><updated>2026-11-15T09:00:00Z</updated><content type="html">&lt;p&gt;Investigating elevated error rates&lt;/p&gt;</content></entry>
+<entry><title>Scheduled maintenance in LHR</title><link href="https://www.cloudflarestatus.com/incidents/bbb"/><updated>2026-11-15T01:00:00Z</updated><content type="html">Scheduled maintenance</content></entry>
+<entry><title>Old incident</title><link href="https://www.cloudflarestatus.com/incidents/ccc"/><updated>2026-10-01T01:00:00Z</updated><content type="html">outage</content></entry>
+</feed>

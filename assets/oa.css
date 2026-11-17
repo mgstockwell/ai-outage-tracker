@@ -1,0 +1,38 @@
+.oa { font-family: var(--font-anthropic-sans); color: var(--color-fg); display: flex; flex-direction: column; gap: var(--cds-gap-xl); }
+.oa h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; line-height: 1.2; }
+.oa h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-xs); }
+.oa .lede { font-size: var(--cds-font-size-body); line-height: 1.55; margin: var(--cds-gap-sm) 0 0; max-width: 62rem; }
+.oa .sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0 0 var(--cds-gap-md); line-height: 1.5; max-width: 62rem; }
+.oa .num { font-variant-numeric: tabular-nums; font-weight: var(--cds-font-weight-medium); }
+.oa .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: var(--cds-gap-md); }
+.oa .tile { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+.oa .tile .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.oa .tile .big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 2rem; font-variant-numeric: tabular-nums; margin: var(--cds-gap-xs) 0; }
+.oa .tile .pair { display: flex; gap: var(--cds-gap-lg); align-items: baseline; }
+.oa .tile .pair small { display: block; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.oa .tile .note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.oa .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+.oa .ctl { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: center; margin-bottom: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.oa .seg button { font: inherit; font-size: var(--cds-font-size-caption); border: 1px solid var(--color-border-line); background: var(--color-bg); color: var(--color-fg); padding: 4px 10px; cursor: pointer; }
+.oa .seg button:first-child { border-radius: var(--cds-radius) 0 0 var(--cds-radius); }
+.oa .seg button:last-child { border-radius: 0 var(--cds-radius) var(--cds-radius) 0; border-left: none; }
+.oa .seg button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
+.oa .chart { position: relative; width: 100%; }
+.oa .chart svg text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+.oa .chart svg .lane-lbl { fill: var(--color-fg); }
+.oa .legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-sm); }
+.oa .legend span.sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.oa .tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: 8px 10px; font-size: var(--cds-font-size-caption); max-width: 280px; line-height: 1.45; z-index: 5; }
+.oa .tip b { color: var(--color-fg); }
+.oa .tip .m { color: var(--cds-text-secondary); }
+.oa .callout { border-left: 3px solid var(--cds-chart-reference); padding: var(--cds-pad-sm) var(--cds-pad-md); font-size: var(--cds-font-size-body); line-height: 1.55; }
+.oa .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--cds-gap-lg); }
+.oa .tw { overflow-x: auto; }
+.oa table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); min-width: 760px; }
+.oa th, .oa td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+.oa th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
+.oa td.r, .oa th.r { text-align: right; font-variant-numeric: tabular-nums; }
+.oa a { color: inherit; }
+.oa details { font-size: var(--cds-font-size-body); line-height: 1.55; }
+.oa details summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); }
+.oa details li { margin-bottom: 6px; }
