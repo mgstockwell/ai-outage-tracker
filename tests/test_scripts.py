@@ -39,7 +39,10 @@ class Helpers(unittest.TestCase):
 class EndToEnd(unittest.TestCase):
     def test_run_with_fixtures(self):
         with tempfile.TemporaryDirectory() as tmp:
-            rc = g.main(["--fixtures", str(FIX / "fixtures.json"), "--out", tmp, "--now", "2026-11-17T12:00:00Z"])
+            iso = ["--tracking", str(Path(tmp) / "tracking.csv"), "--outages", str(Path(tmp) / "outages.csv")]
+            import shutil
+            shutil.copy(ROOT / "data" / "outages.csv", Path(tmp) / "outages.csv")
+            rc = g.main(["--fixtures", str(FIX / "fixtures.json"), "--out", tmp, "--now", "2026-11-17T12:00:00Z"] + iso)
             self.assertEqual(rc, 0)
             rows = list(csv.DictReader(open(Path(tmp) / "2026-11-17.csv", encoding="utf-8")))
             services = sorted({r["service"] for r in rows})
@@ -57,9 +60,86 @@ class EndToEnd(unittest.TestCase):
             self.assertIn("## Likely incidents", md)
             self.assertIn("180,000", md)
             # second run reports nothing new (seen_urls)
-            g.main(["--fixtures", str(FIX / "fixtures.json"), "--out", tmp, "--now", "2026-11-17T12:00:00Z"])
+            g.main(["--fixtures", str(FIX / "fixtures.json"), "--out", tmp, "--now", "2026-11-17T12:00:00Z"] + iso)
             rows2 = list(csv.DictReader(open(Path(tmp) / "2026-11-17.csv", encoding="utf-8")))
             self.assertEqual(rows2, [])
+
+
+class WatchList(unittest.TestCase):
+    """Three weekly runs: detect, update with follow-up coverage, then store."""
+
+    def test_detect_update_store(self):
+        import shutil
+        import tracking as t
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            outages = tmp / "outages.csv"
+            shutil.copy(ROOT / "data" / "outages.csv", outages)
+            before = outages.read_text().count("\n")
+            common = ["--out", str(tmp / "cand"), "--tracking", str(tmp / "tracking.csv"), "--outages", str(outages)]
+
+            # Week 1: Verizon (2 outlets) and Cloudflare (status page) go on the watch list.
+            # Chase is already in the dataset; ChatGPT has a single source. Neither is added.
+            g.main(["--fixtures", str(FIX / "fixtures.json"), "--now", "2026-11-17T12:00:00Z"] + common)
+            rows = {r["service"]: r for r in t.load(tmp / "tracking.csv")}
+            self.assertEqual(sorted(rows), ["Cloudflare", "Verizon"])
+            vz = rows["Verizon"]
+            self.assertEqual((vz["status"], vz["incident_date"], vz["store_after"]), ("watching", "2026-11-14", "2026-12-05"))
+            self.assertEqual((vz["sources"], vz["max_reports"], vz["cause_type"]), ("2", "180000", ""))
+
+            # Week 2: follow-up coverage adds the cause, duration and another outlet to the same incident.
+            g.main(["--fixtures", str(FIX / "fixtures_week2.json"), "--now", "2026-11-24T12:00:00Z"] + common)
+            rows = {r["service"]: r for r in t.load(tmp / "tracking.csv")}
+            self.assertEqual(sorted(rows), ["Cloudflare", "Verizon"])  # AT&T single-source mention not added
+            vz = rows["Verizon"]
+            self.assertEqual(vz["incident_date"], "2026-11-14")
+            self.assertEqual(vz["cause_type"], "Change / config error")
+            self.assertIn("software update", vz["cause_text"])
+            self.assertEqual(vz["duration_hours"], "10")
+            self.assertEqual(vz["sources"], "3")
+            self.assertEqual(vz["last_updated"], "2026-11-24")
+            self.assertIn("Updated this week", (tmp / "cand" / "latest.md").read_text())
+
+            # A person marks Cloudflare as a false alarm.
+            watch = t.load(tmp / "tracking.csv")
+            for r in watch:
+                if r["service"] == "Cloudflare":
+                    r["status"] = "dismissed"
+            t.save(tmp / "tracking.csv", watch)
+
+            # Week 4: Verizon's store_after date has passed, so it is stored with what was learned.
+            g.main(["--fixtures", str(FIX / "fixtures_empty.json"), "--now", "2026-12-07T12:00:00Z"] + common)
+            rows = {r["service"]: r for r in t.load(tmp / "tracking.csv")}
+            self.assertEqual(rows["Verizon"]["status"], "stored")
+            self.assertEqual(rows["Cloudflare"]["status"], "dismissed")
+            new = [r for r in csv.DictReader(outages.open()) if r["date"] == "2026-11-14"]
+            self.assertEqual(len(new), 1)
+            self.assertEqual((new[0]["service"], new[0]["cause_type"], new[0]["duration_hours"], new[0]["reports"],
+                              new[0]["reports_type"], new[0]["era"]),
+                             ("Verizon", "Change / config error", "10", "180000", "Peak (news)", "AI era"))
+            self.assertEqual(outages.read_text().count("\n"), before + 1)
+
+            # Later coverage of a stored incident is flagged, not turned into a new incident.
+            rows_list = t.load(tmp / "tracking.csv")
+            later = [{"service": "Verizon", "category": "Cell & ISP", "first": dt.date(2026, 12, 20), "last": dt.date(2026, 12, 20),
+                      "sources": 2, "status_page": False, "max_reports": 0, "tracked": False,
+                      "rows": [{"title": "FCC report explains what caused Verizon outage", "url": "https://x.example/fcc", "domain": "x.example"}]}]
+            rep = t.update(rows_list, later, dt.date(2026, 12, 21), 21)
+            self.assertEqual((len(rep["new"]), len(rep["late"])), (0, 1))
+
+            # Running again stores nothing twice.
+            g.main(["--fixtures", str(FIX / "fixtures_empty.json"), "--now", "2026-12-14T12:00:00Z"] + common)
+            self.assertEqual(outages.read_text().count("\n"), before + 1)
+
+    def test_guessers(self):
+        import tracking as t
+        self.assertEqual(t.guess_cause("The outage was caused by a configuration change.")[0], "Change / config error")
+        self.assertEqual(t.guess_cause("Bank blamed a third-party vendor")[0], "Third-party / vendor")
+        self.assertEqual(t.guess_cause("Outage traced to a power failure at a data center")[0], "Hardware / power")
+        self.assertIsNone(t.guess_cause("Verizon outage hits millions"))
+        self.assertEqual(t.guess_duration("service was down for nearly 10 hours"), 10)
+        self.assertEqual(t.guess_duration("a 12-hour-long outage"), 12)
+        self.assertIsNone(t.guess_duration("reports in the past day"))
 
 
 class BuildData(unittest.TestCase):

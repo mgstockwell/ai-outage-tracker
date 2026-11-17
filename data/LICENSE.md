@@ -2,8 +2,8 @@
 
 Copyright (c) 2026 Mark Stockwell
 
-The dataset in this folder (`outages.csv`, `outages.json`, `yearly_largest.csv`, `yearly_largest.json`
-and the files under `candidates/`) is licensed under the
+The dataset in this folder (`outages.csv`, `outages.json`, `yearly_largest.csv`, `yearly_largest.json`,
+`analysis.json`, `tracking.csv` and the files under `candidates/`) is licensed under the
 **Creative Commons Attribution 4.0 International License**.
 
 Full legal text: https://creativecommons.org/licenses/by/4.0/legalcode

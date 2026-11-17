@@ -1,6 +1,9 @@
 {
   "_comment": "Config for scripts/gather_sources.py. Edit freely: add services, aliases, queries or status feeds. Any source that fails is logged and skipped.",
   "lookback_days": 7,
+  "watch_days": 21,
+  "_watch_days": "How long a new outage stays on the watch list (data/tracking.csv) collecting updates before it is stored in data/outages.csv.",
+  "max_follow_ups": 15,
   "user_agent": "ai-outage-tracker/1.0 (+https://github.com/mgstockwell/ai-outage-tracker)",
   "outage_keywords": ["outage", "outages", "down", "disruption", "disrupted", "not working", "went dark", "service issues", "problems", "glitch", "offline", "restored"],
   "exclude_keywords": ["scheduled maintenance", "power outage map", "weather", "hurricane", "storm", "earnings call", "stock is down", "shares down", "down payment", "downgrade"],

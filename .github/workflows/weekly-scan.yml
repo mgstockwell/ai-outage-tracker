@@ -33,21 +33,28 @@ jobs:
       - name: Gather candidate outages
         run: python scripts/gather_sources.py --days "${{ github.event.inputs.days || '7' }}"
 
-      - name: Validate dataset
-        run: python scripts/build_data.py --check
+      # Incidents stored this week were appended to data/outages.csv; rebuild the JSON and findings.
+      - name: Rebuild dataset and findings
+        run: python scripts/build_data.py
 
       - name: Run date
         id: date
         run: echo "today=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
-      # Opens (or updates) one pull request with this week's candidates for you to review.
+      # Opens (or updates) one pull request with this week's leads, watch-list updates and any
+      # incidents stored in the dataset. Nothing reaches main until you merge it.
       # Requires: Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests".
       - name: Open review pull request
         uses: peter-evans/create-pull-request@v7
         with:
           branch: scan/weekly-candidates
           delete-branch: true
-          add-paths: data/candidates/**
+          add-paths: |
+            data/candidates/**
+            data/tracking.csv
+            data/outages.csv
+            data/*.json
+            README.md
           commit-message: "Outage candidates for week ending ${{ steps.date.outputs.today }}"
           title: "Outage candidates: week ending ${{ steps.date.outputs.today }}"
           body-path: data/candidates/latest.md

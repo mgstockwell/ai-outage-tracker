@@ -1,0 +1,5 @@
+{"articles":[
+ {"url":"https://www.example-news.com/verizon-cause","title":"Verizon says last week's outage was caused by a software update; service was down for nearly 10 hours","seendate":"20261120T150000Z","domain":"example-news.com"},
+ {"url":"https://third.example.net/verizon-credit","title":"Verizon offers credit after outage that left customers without service","seendate":"20261121T150000Z","domain":"third.example.net"},
+ {"url":"https://news.example.com/att-outage","title":"AT&T outage: thousands report problems","seendate":"20261122T150000Z","domain":"news.example.com"}
+]}

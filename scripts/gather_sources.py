@@ -16,6 +16,11 @@ Downdetector itself has no public API and its terms forbid scraping, so this scr
 does NOT read downdetector.com. It finds news coverage that cites Downdetector, plus
 providers' own incident feeds.
 
+It also keeps a watch list of new outages (data/tracking.csv, see scripts/tracking.py): likely
+incidents are added, updated each week as more coverage appears (sources, report counts,
+duration, cause, post-mortem link), and stored in data/outages.csv once their store_after
+date passes (default 21 days after the outage). Follow-up searches run for each open incident.
+
 Output (one set per run, dated by the run day in UTC):
   data/candidates/YYYY-MM-DD.csv  every matching article or status entry
   data/candidates/YYYY-MM-DD.md   the same, grouped into likely incidents, for review
@@ -44,10 +49,15 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import tracking  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = ROOT / "scripts" / "sources.json"
 DEFAULT_OUT = ROOT / "data" / "candidates"
 OUTAGES_CSV = ROOT / "data" / "outages.csv"
+TRACKING_CSV = ROOT / "data" / "tracking.csv"
+AI_ERA_START = dt.date(2022, 11, 30)
 
 CANDIDATE_FIELDS = [
     "incident_date", "service", "category", "signal", "title", "url", "domain",
@@ -186,12 +196,12 @@ def from_gdelt(cfg: dict, days: int, fetch: Fetcher, sleep=time.sleep) -> list[d
     return items
 
 
-def from_google_news(cfg: dict, days: int, fetch: Fetcher, sleep=time.sleep) -> list[dict]:
+def from_google_news(cfg: dict, days: int, fetch: Fetcher, sleep=time.sleep, extra_queries=()) -> list[dict]:
     g = cfg.get("google_news", {})
     if not g.get("enabled"):
         return []
     items = []
-    for i, q in enumerate(g.get("queries", [])):
+    for i, q in enumerate(list(g.get("queries", [])) + list(extra_queries)):
         if i:
             sleep(g.get("pause_seconds", 2))
         params = {"q": f"{q} when:{days}d", "hl": "en-US", "gl": "US", "ceid": "US:en"}
@@ -269,8 +279,9 @@ def is_tracked(day: dt.date, service: str, tracked) -> bool:
     return any(abs((day - d).days) <= 2 and s in name.lower() for d, name in tracked)
 
 
-def collect(cfg: dict, days: int, fetch: Fetcher, now: dt.datetime, seen: set[str], tracked, sleep=time.sleep) -> list[dict]:
-    raw_items = (from_gdelt(cfg, days, fetch, sleep) + from_google_news(cfg, days, fetch, sleep)
+def collect(cfg: dict, days: int, fetch: Fetcher, now: dt.datetime, seen: set[str], tracked, sleep=time.sleep,
+            follow_ups=()) -> list[dict]:
+    raw_items = (from_gdelt(cfg, days, fetch, sleep) + from_google_news(cfg, days, fetch, sleep, follow_ups)
                  + from_status_feeds(cfg, days, fetch, now))
     matchers = build_matchers(cfg.get("services", {}))
     cutoff = now - dt.timedelta(days=days)
@@ -280,7 +291,9 @@ def collect(cfg: dict, days: int, fetch: Fetcher, now: dt.datetime, seen: set[st
         if not url:
             continue
         key = normalize_url(url)
-        if key in urls or key in seen:
+        # Status pages edit the same incident URL as they learn more (e.g. add a post-mortem),
+        # so those are re-read every run; news URLs are only reported once.
+        if key in urls or (key in seen and it["signal"] != "status page"):
             continue
         pub = it.get("published")
         if pub and pub < cutoff:
@@ -302,6 +315,8 @@ def collect(cfg: dict, days: int, fetch: Fetcher, now: dt.datetime, seen: set[st
                 "reports_mentioned": reports_mentioned(text) or "",
                 "already_tracked": "yes" if is_tracked(day, service, tracked) else "",
                 "query": it.get("query", ""),
+                "text": it.get("summary", ""),
+                "seen_before": key in seen,
             })
     rows.sort(key=lambda r: (r["incident_date"], r["service"], r["domain"]), reverse=True)
     return rows
@@ -342,9 +357,9 @@ def summary_markdown(clusters, rows, errors, days, now) -> str:
     tracked = [c for c in clusters if c["tracked"]]
     L = [f"# Outage candidates, {now:%Y-%m-%d}", "",
          f"Scan of the last {days} days: {len(rows)} matching articles or status entries, grouped into {len(clusters)} possible incidents.",
-         "", "To add one to the dataset: open its links, confirm the date, duration, report count (say whether it is a "
-         "**Total** from an Ookla list or a **Peak** from news) and cause from a primary source, add a row to "
-         "`data/outages.csv`, then run `python scripts/build_data.py`.", ""]
+         "", "Likely incidents go on the watch list automatically and are stored in `data/outages.csv` after "
+         "their watch period. Single-source mentions don't; to keep one, add a row to `data/tracking.csv` "
+         "(or straight to `data/outages.csv`).", ""]
 
     def table(cs):
         L.extend(["| Dates | Service | Industry | Sources | Reports cited | Top links |", "|---|---|---|---|---|---|"])
@@ -378,6 +393,8 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="print the summary, write nothing")
     ap.add_argument("--fixtures", type=Path, default=None, help="JSON map {url_substring: file} for offline tests")
     ap.add_argument("--now", default=None, help="override current UTC time (ISO), for tests")
+    ap.add_argument("--tracking", type=Path, default=TRACKING_CSV, help="watch list CSV")
+    ap.add_argument("--outages", type=Path, default=OUTAGES_CSV, help="dataset CSV that stored incidents are added to")
     args = ap.parse_args(argv)
 
     cfg = json.loads(args.config.read_text(encoding="utf-8"))
@@ -391,10 +408,20 @@ def main(argv=None) -> int:
 
     seen_path = args.out / "seen_urls.txt"
     seen = set(seen_path.read_text().split()) if seen_path.exists() else set()
-    rows = collect(cfg, days, fetch, now, seen, load_tracked(OUTAGES_CSV),
-                   sleep=(lambda s: None) if fixtures else time.sleep)
+    watch = tracking.load(args.tracking)
+    open_rows = [r for r in watch if r["status"] in tracking.OPEN]
+    follow_ups = [f'"{r["service"]}" outage cause' for r in open_rows][: cfg.get("max_follow_ups", 15)]
+    rows = collect(cfg, days, fetch, now, seen, load_tracked(args.outages),
+                   sleep=(lambda s: None) if fixtures else time.sleep, follow_ups=follow_ups)
+    today = now.date()
+    # Every row (including re-read status-page entries) can update the watch list...
+    report = tracking.update(watch, cluster(rows), today, cfg.get("watch_days", 21))
+    stored = [] if args.dry_run else tracking.store_due(watch, args.outages, today, AI_ERA_START)
+    # ...but only links not reported before are listed as new leads.
+    rows = [r for r in rows if not r["seen_before"]]
     clusters = cluster(rows)
     md = summary_markdown(clusters, rows, fetch.errors, days, now)
+    md = md.replace("## Likely incidents", tracking.report_markdown(report, stored, watch) + "\n## Likely incidents", 1)
 
     if args.dry_run:
         print(md)
@@ -402,13 +429,15 @@ def main(argv=None) -> int:
         args.out.mkdir(parents=True, exist_ok=True)
         stamp = now.strftime("%Y-%m-%d")
         with (args.out / f"{stamp}.csv").open("w", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=CANDIDATE_FIELDS)
+            w = csv.DictWriter(f, fieldnames=CANDIDATE_FIELDS, extrasaction="ignore")
             w.writeheader(); w.writerows(rows)
         (args.out / f"{stamp}.md").write_text(md, encoding="utf-8")
         (args.out / "latest.md").write_text(md, encoding="utf-8")
+        tracking.save(args.tracking, watch)
         seen |= {normalize_url(r["url"]) for r in rows}
         seen_path.write_text("\n".join(sorted(seen)) + "\n", encoding="utf-8")
-        print(f"Wrote {len(rows)} rows, {len(clusters)} possible incidents to {args.out}/{stamp}.*")
+        print(f"Wrote {len(rows)} rows, {len(clusters)} possible incidents to {args.out}/{stamp}.*; "
+              f"watch list: {len(report['new'])} new, {len(report['updated'])} updated, {len(stored)} stored")
         if os.environ.get("GITHUB_STEP_SUMMARY"):
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
                 f.write(md + "\n")
