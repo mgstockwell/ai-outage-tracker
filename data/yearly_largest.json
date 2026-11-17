@@ -1,0 +1,58 @@
+[
+ {
+  "year": 2018,
+  "service": "YouTube",
+  "reports_millions": 2.7,
+  "note": "Downdetector record at the time",
+  "source": "https://www.geekwire.com/2019/bad-facebook-outage-downdetector-ranks-worst-service-issue-ever-tracked/"
+ },
+ {
+  "year": 2019,
+  "service": "Meta (Facebook)",
+  "reports_millions": 7.5,
+  "note": null,
+  "source": "https://www.geekwire.com/2019/bad-facebook-outage-downdetector-ranks-worst-service-issue-ever-tracked/"
+ },
+ {
+  "year": 2021,
+  "service": "Meta (Facebook)",
+  "reports_millions": 10.6,
+  "note": null,
+  "source": "https://tass.com/economy/1345651/amp"
+ },
+ {
+  "year": 2022,
+  "service": "Spotify",
+  "reports_millions": 2.9,
+  "note": null,
+  "source": "https://www.gsma.com/membership/resources/downdetector-presents-the-10-largest-internet-outages-of-2022/"
+ },
+ {
+  "year": 2023,
+  "service": "Instagram",
+  "reports_millions": 2.4,
+  "note": "First half of 2023 only",
+  "source": "https://www.ispreview.co.uk/index.php/2023/08/the-top-10-largest-global-internet-service-outages-for-h1-2023.html"
+ },
+ {
+  "year": 2024,
+  "service": "Meta (Facebook)",
+  "reports_millions": 11.1,
+  "note": "Q1–Q3 2024",
+  "source": "https://www.ispreview.co.uk/?p=40222"
+ },
+ {
+  "year": 2025,
+  "service": "AWS",
+  "reports_millions": 17,
+  "note": null,
+  "source": "https://www.fonearena.com/blog/471254/largest-outages-2025-ookla.html"
+ },
+ {
+  "year": 2026,
+  "service": "Verizon",
+  "reports_millions": 2.3,
+  "note": "Year to date; no Ookla annual list yet",
+  "source": "https://broadbandbreakfast.com/verizon-says-major-outage-caused-by-software-issue/"
+ }
+]

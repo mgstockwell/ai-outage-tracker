@@ -1,0 +1,109 @@
+# AI Outage Tracker
+
+Curated dataset and dashboard of major consumer outages (banks, payments, carriers, social, cloud, AI) from 2018 to 2026,
+built to ask one question: **are outages getting worse now that AI is everywhere?**
+
+**Live dashboard:** https://mgstockwell.github.io/ai-outage-tracker/ (after GitHub Pages is turned on, see below)
+
+## What the data shows so far
+
+- **Not more frequent, as far as can be measured.** The root causes look the same before and after ChatGPT's launch
+  (Nov 30, 2022). About 70% of outages with a disclosed cause were a company's own change or software bug in both periods.
+  Uptime Institute's [2026 Annual Outage Analysis](https://intelligence.uptimeinstitute.com/resource/annual-outage-analysis-2026)
+  also finds per-site outage frequency falling for the fifth year in a row.
+- **Wider reach.** The biggest single events keep growing (AWS, Oct 2025: about 17 million Downdetector reports), and since
+  2023 about a quarter of explained outages came from a shared vendor or provider (FIS, Fiserv, AWS, Azure), so one failure
+  takes down many brands at once.
+
+## What's in the repo
+
+| Path | What it is |
+|---|---|
+| `data/outages.csv` | **The dataset.** One row per outage: date, service, industry, duration, Downdetector reports, cause, source link. |
+| `data/yearly_largest.csv` | Downdetector's largest outage of each year. |
+| `data/*.json` | Generated from the CSVs by `scripts/build_data.py`. Don't edit by hand. |
+| `data/candidates/` | Weekly scan output: possible new outages waiting for review. |
+| `index.html`, `assets/`, `vendor/` | The dashboard. Static files, no build step. |
+| `scripts/gather_sources.py` | Weekly scanner: finds possible outages in news and status pages. |
+| `scripts/sources.json` | Scanner settings: services to watch, search queries, status feeds. |
+| `scripts/build_data.py` | Validates the CSVs and regenerates the JSON. |
+| `tests/` | Offline tests for both scripts. |
+
+## How the weekly scan works
+
+Every Monday, `.github/workflows/weekly-scan.yml` runs `scripts/gather_sources.py`. It looks back 7 days in:
+
+1. **GDELT** news search ([DOC 2.0 API](https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/), free, no key)
+2. **Google News** RSS search
+3. **Official status feeds**: Cloudflare, Google Cloud, Azure, AWS, OpenAI, Anthropic
+
+It keeps items that mention a tracked service (by name, case-sensitive) and an outage word, drops ones already
+reported in earlier runs, and groups them into likely incidents (same service within 2 days). Then it opens a pull
+request titled *"Outage candidates: week ending …"* that lists:
+
+- **Likely incidents**: covered by 2+ outlets, or on the provider's own status page
+- **Single-source mentions**: often minor; check before adding
+- **Already in the dataset**: matched an existing row
+- **Sources that failed**, if any
+
+**The scan never edits `outages.csv`.** Durations, report counts and causes need checking against a primary source,
+so a person adds rows. Merge the PR to keep the history of leads, or close it.
+
+The scan does **not** read downdetector.com. Downdetector has no public API and its terms don't allow scraping. Report
+counts come from news coverage that quotes Downdetector, and from Ookla's year-end reports.
+
+### Adding an outage
+
+1. Open the links for a candidate in the weekly PR and confirm the facts.
+2. Add a row to `data/outages.csv`. Allowed values:
+   - `category`: Banking · Payments & commerce · Cell & ISP · Social & streaming · Cloud & infrastructure · AI services
+   - `cause_type`: Change / config error · Change / migration · Software bug · Hardware / power · Third-party / vendor · Not disclosed
+   - `reports_type`: `Total (Downdetector)` for Ookla full-event totals, `Peak (news)` for a peak count quoted in news, or empty
+   - `era`: `Pre-AI` before 2022-11-30, `AI era` from then on
+3. Run `python scripts/build_data.py`. It checks every row and rewrites the JSON.
+4. Commit. The *Validate data* workflow re-checks on every push and PR.
+
+Each December or January, add the year's top outage from Ookla's year-end report to `data/yearly_largest.csv`.
+
+### Running it yourself
+
+Python 3.10+ only, no packages to install.
+
+```bash
+python scripts/gather_sources.py --dry-run     # print this week's candidates, write nothing
+python scripts/gather_sources.py --days 30     # longer lookback, writes data/candidates/
+python scripts/build_data.py                   # validate CSVs, rebuild JSON
+python -m unittest discover tests              # offline tests
+python -m http.server                          # then open http://localhost:8000
+```
+
+Edit `scripts/sources.json` to watch more services (add aliases), change search queries, add status feeds or turn
+a source off (`"enabled": false`).
+
+## One-time GitHub setup
+
+1. **Settings → Pages**: Source *Deploy from a branch*, branch `main`, folder `/ (root)`.
+2. **Settings → Actions → General → Workflow permissions**: choose *Read and write permissions* and tick
+   *Allow GitHub Actions to create and approve pull requests* (needed for the weekly PR).
+3. **Actions → Weekly outage scan → Run workflow** to test it now instead of waiting for Monday.
+
+## Limits of this data
+
+- **It can't count frequency.** It's a curated list of major, widely reported outages. Recent years are much better
+  documented, so more rows in recent years mostly reflects more reporting.
+- **Two kinds of report counts.** Ookla's year-end lists give total reports for a whole event; news gives the peak at one
+  moment, which is much lower. They're labelled and shouldn't be compared directly.
+- **"AI era" is a date, not a cause.** It starts at ChatGPT's launch. Timing alone can't show AI caused anything.
+- **Downdetector report counts grow with Downdetector's audience**, not only with outage size.
+- Gaming outages (PlayStation, Xbox, Roblox) are left out.
+
+For an exact count of outages over time per platform, you'd need Downdetector's paid history
+(Ookla's Downdetector Explorer).
+
+## License
+
+- **Data** (`data/`): [CC BY 4.0](data/LICENSE.md). Credit "AI Outage Tracker dataset by Mark Stockwell" with a link.
+- **Code**: [MIT](LICENSE).
+- `vendor/d3.min.js`: D3 by Mike Bostock, [ISC license](vendor/d3.LICENSE).
+
+Not affiliated with Downdetector, Ookla or any company listed. Figures come from the sources linked in each row.
