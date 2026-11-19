@@ -39,7 +39,8 @@ class Helpers(unittest.TestCase):
 class EndToEnd(unittest.TestCase):
     def test_run_with_fixtures(self):
         with tempfile.TemporaryDirectory() as tmp:
-            iso = ["--tracking", str(Path(tmp) / "tracking.csv"), "--outages", str(Path(tmp) / "outages.csv")]
+            iso = ["--tracking", str(Path(tmp) / "tracking.csv"), "--outages", str(Path(tmp) / "outages.csv"),
+                   "--updog-dir", str(Path(tmp) / "updog")]
             import shutil
             shutil.copy(ROOT / "data" / "outages.csv", Path(tmp) / "outages.csv")
             rc = g.main(["--fixtures", str(FIX / "fixtures.json"), "--out", tmp, "--now", "2026-11-17T12:00:00Z"] + iso)
@@ -76,7 +77,8 @@ class WatchList(unittest.TestCase):
             outages = tmp / "outages.csv"
             shutil.copy(ROOT / "data" / "outages.csv", outages)
             before = outages.read_text().count("\n")
-            common = ["--out", str(tmp / "cand"), "--tracking", str(tmp / "tracking.csv"), "--outages", str(outages)]
+            common = ["--out", str(tmp / "cand"), "--tracking", str(tmp / "tracking.csv"), "--outages", str(outages),
+                      "--updog-dir", str(tmp / "updog")]
 
             # Week 1: Verizon (2 outlets) and Cloudflare (status page) go on the watch list.
             # Chase is already in the dataset; ChatGPT has a single source. Neither is added.
@@ -86,6 +88,11 @@ class WatchList(unittest.TestCase):
             vz = rows["Verizon"]
             self.assertEqual((vz["status"], vz["incident_date"], vz["store_after"]), ("watching", "2026-11-14", "2026-12-05"))
             self.assertEqual((vz["sources"], vz["max_reports"], vz["cause_type"]), ("2", "180000", ""))
+            # Updog saw Cloudflare degraded 04:00-06:30 UTC that day: its measured window becomes the duration.
+            cf = rows["Cloudflare"]
+            self.assertEqual((cf["duration_hours"], cf["duration_source"]), ("2.5", "Updog"))
+            self.assertIn("Cloudflare 11-15 04:00–06:30 UTC", cf["updog_match"])
+            self.assertIn("## Updog by Datadog archive", (tmp / "cand" / "latest.md").read_text())
 
             # Week 2: follow-up coverage adds the cause, duration and another outlet to the same incident.
             g.main(["--fixtures", str(FIX / "fixtures_week2.json"), "--now", "2026-11-24T12:00:00Z"] + common)
@@ -99,6 +106,14 @@ class WatchList(unittest.TestCase):
             self.assertEqual(vz["sources"], "3")
             self.assertEqual(vz["last_updated"], "2026-11-24")
             self.assertIn("Updated this week", (tmp / "cand" / "latest.md").read_text())
+            # The Updog archive keeps outages that dropped out of Updog's window, and updates ongoing ones.
+            import updog as u
+            arch = u.load(tmp / "updog" / "outages.csv")
+            self.assertEqual(len(arch), 3)
+            ddb = [r for r in arch.values() if r["display_name"] == "Amazon DynamoDB" and r["impacted_region"]][0]
+            self.assertEqual((ddb["status"], ddb["duration_minutes"], ddb["first_seen"], ddb["last_seen"]),
+                             ("resolved", "90", "2026-11-17", "2026-11-24"))
+            self.assertEqual(len(list((tmp / "updog" / "raw").glob("*.json.gz"))), 2)
 
             # A person marks Cloudflare as a false alarm.
             watch = t.load(tmp / "tracking.csv")
@@ -140,6 +155,32 @@ class WatchList(unittest.TestCase):
         self.assertEqual(t.guess_duration("service was down for nearly 10 hours"), 10)
         self.assertEqual(t.guess_duration("a 12-hour-long outage"), 12)
         self.assertIsNone(t.guess_duration("reports in the past day"))
+
+
+class Updog(unittest.TestCase):
+    def test_parse_tolerates_layout(self):
+        import updog as u
+        rows = u.parse(json.loads((FIX / "updog.json").read_text()))
+        self.assertEqual(len(rows), 3)
+        ongoing = [r for r in rows if r["status"] == "ongoing"][0]
+        self.assertEqual((ongoing["end_utc"], ongoing["duration_minutes"], ongoing["impacted_endpoints"]), ("", "", "GetItem | PutItem"))
+        cf = [r for r in rows if r["provider"] == "cloudflare"][0]
+        self.assertEqual((cf["start_utc"], cf["duration_minutes"]), ("2026-11-15T04:00Z", "150"))
+        self.assertIn("cloudflarestatus.com/incidents/aaa", cf["status_page_incidents"])
+        # same data as a bare list, or nested differently, still parses
+        self.assertEqual(len(u.parse(json.loads((FIX / "updog.json").read_text())["provider_data"])), 3)
+        self.assertEqual(len(u.parse({"data": {"providers": json.loads((FIX / "updog.json").read_text())["provider_data"]}})), 3)
+
+    def test_bad_file_leaves_archive_alone(self):
+        import updog as u
+        class F:
+            def get(self, url):
+                return b'{"something": "else"}'
+        with tempfile.TemporaryDirectory() as tmp:
+            s = u.run(F(), Path(tmp), dt.date(2026, 11, 19))
+            self.assertFalse(s["ok"])
+            self.assertIn("format may have changed", s["error"])
+            self.assertFalse((Path(tmp) / "outages.csv").exists())
 
 
 class BuildData(unittest.TestCase):

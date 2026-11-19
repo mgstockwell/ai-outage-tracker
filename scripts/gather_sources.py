@@ -11,6 +11,7 @@ Sources (all free, no API keys), set in scripts/sources.json:
   * GDELT DOC 2.0 news search
   * Google News RSS search
   * Official status-page feeds (Cloudflare, Google Cloud, Azure, AWS, OpenAI, Anthropic)
+  * Updog by Datadog's outage detections, archived in data/updog/ (see scripts/updog.py)
 
 Downdetector itself has no public API and its terms forbid scraping, so this script
 does NOT read downdetector.com. It finds news coverage that cites Downdetector, plus
@@ -51,12 +52,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import tracking  # noqa: E402
+import updog  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = ROOT / "scripts" / "sources.json"
 DEFAULT_OUT = ROOT / "data" / "candidates"
 OUTAGES_CSV = ROOT / "data" / "outages.csv"
 TRACKING_CSV = ROOT / "data" / "tracking.csv"
+UPDOG_DIR = ROOT / "data" / "updog"
 AI_ERA_START = dt.date(2022, 11, 30)
 
 CANDIDATE_FIELDS = [
@@ -91,7 +94,15 @@ class Fetcher:
                 last = e
                 if isinstance(e, urllib.error.HTTPError) and e.code in (400, 401, 403, 404):
                     break
-                time.sleep(3 * (attempt + 1))
+                if attempt == retries:
+                    break
+                wait = 3 * (attempt + 1)
+                if isinstance(e, urllib.error.HTTPError) and e.code == 429:  # rate limited: back off properly
+                    try:
+                        wait = min(int(e.headers.get("Retry-After", "")), 120)
+                    except (TypeError, ValueError):
+                        wait = 30 * (attempt + 1)
+                time.sleep(wait)
         self.errors.append(f"{url} -> {last}")
         return None
 
@@ -182,7 +193,7 @@ def from_gdelt(cfg: dict, days: int, fetch: Fetcher, sleep=time.sleep) -> list[d
             sleep(g.get("pause_seconds", 6))
         params = {"query": q, "mode": "artlist", "format": "json", "sort": "datedesc",
                   "maxrecords": str(g.get("max_records", 250)), "timespan": f"{days}d"}
-        raw = fetch.get(g["endpoint"] + "?" + urllib.parse.urlencode(params))
+        raw = fetch.get(g["endpoint"] + "?" + urllib.parse.urlencode(params), retries=g.get("retries", 3))
         if not raw:
             continue
         try:
@@ -299,6 +310,8 @@ def collect(cfg: dict, days: int, fetch: Fetcher, now: dt.datetime, seen: set[st
         if pub and pub < cutoff:
             continue
         text = f"{it['title']} {it.get('summary', '')}"
+        if (it.get("source_name") or domain_of(url)).lower() in {x.lower() for x in cfg.get("exclude_sources", [])}:
+            continue
         if it["signal"] != "status page" and not looks_like_outage(text, cfg):
             continue
         hits = [(it["service"], it["category"])] if it.get("service") else match_services(text, matchers)
@@ -323,7 +336,7 @@ def collect(cfg: dict, days: int, fetch: Fetcher, now: dt.datetime, seen: set[st
 
 
 def cluster(rows: list[dict]) -> list[dict]:
-    """Group rows into likely incidents: same service within a 2-day window."""
+    """Group rows into likely incidents: same service, within 2 days of the first report."""
     by_service = defaultdict(list)
     for r in rows:
         by_service[r["service"]].append(r)
@@ -333,7 +346,7 @@ def cluster(rows: list[dict]) -> list[dict]:
         cur = None
         for r in rs:
             d = dt.date.fromisoformat(r["incident_date"])
-            if cur and (d - cur["last"]).days <= 2:
+            if cur and (d - cur["first"]).days <= 2:
                 cur["rows"].append(r); cur["last"] = d
             else:
                 cur = {"service": service, "category": r["category"], "first": d, "last": d, "rows": [r]}
@@ -395,6 +408,7 @@ def main(argv=None) -> int:
     ap.add_argument("--now", default=None, help="override current UTC time (ISO), for tests")
     ap.add_argument("--tracking", type=Path, default=TRACKING_CSV, help="watch list CSV")
     ap.add_argument("--outages", type=Path, default=OUTAGES_CSV, help="dataset CSV that stored incidents are added to")
+    ap.add_argument("--updog-dir", type=Path, default=UPDOG_DIR, help="where the Updog archive is kept")
     args = ap.parse_args(argv)
 
     cfg = json.loads(args.config.read_text(encoding="utf-8"))
@@ -416,12 +430,24 @@ def main(argv=None) -> int:
     today = now.date()
     # Every row (including re-read status-page entries) can update the watch list...
     report = tracking.update(watch, cluster(rows), today, cfg.get("watch_days", 21))
+    ucfg = cfg.get("updog", {})
+    updog_summary = None
+    if ucfg.get("enabled"):
+        updog_summary = updog.run(fetch, args.updog_dir, today, dry_run=args.dry_run)
+        archive_rows = list(updog.load(args.updog_dir / "outages.csv").values()) if not args.dry_run else []
+        for row, changes in tracking.apply_updog(watch, archive_rows, ucfg.get("providers_for_service", {}), today, updog.matches):
+            existing = next((ch for r, ch in report["updated"] if r is row), None)
+            if existing is not None:
+                existing.extend(changes)
+            elif row not in report["new"]:
+                report["updated"].append((row, changes))
     stored = [] if args.dry_run else tracking.store_due(watch, args.outages, today, AI_ERA_START)
     # ...but only links not reported before are listed as new leads.
     rows = [r for r in rows if not r["seen_before"]]
     clusters = cluster(rows)
     md = summary_markdown(clusters, rows, fetch.errors, days, now)
-    md = md.replace("## Likely incidents", tracking.report_markdown(report, stored, watch) + "\n## Likely incidents", 1)
+    md = md.replace("## Likely incidents", tracking.report_markdown(report, stored, watch) + "\n"
+                    + (updog.report_markdown(updog_summary) + "\n" if updog_summary else "") + "## Likely incidents", 1)
 
     if args.dry_run:
         print(md)

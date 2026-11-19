@@ -1,0 +1,5 @@
+{"provider_data": [
+  {"provider_name": "amazonaws", "display_name": "Amazon DynamoDB", "outages": [
+    {"start": 1795000000000, "end": 1795005400000, "status": "resolved", "impacted_region": "us-east-1", "kind": "error+latency", "impacted_endpoints": ["GetItem", "PutItem"]}
+  ]}
+]}

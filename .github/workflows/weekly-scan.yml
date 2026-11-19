@@ -52,6 +52,7 @@ jobs:
           add-paths: |
             data/candidates/**
             data/tracking.csv
+            data/updog/**
             data/outages.csv
             data/*.json
             README.md

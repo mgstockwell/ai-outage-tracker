@@ -20,7 +20,8 @@ from pathlib import Path
 
 TRACKING_FIELDS = [
     "id", "service", "category", "incident_date", "status", "store_after", "sources", "max_reports",
-    "duration_hours", "cause_type", "cause_text", "postmortem_url", "outlets", "links", "first_seen", "last_updated", "notes",
+    "duration_hours", "duration_source", "updog_match", "cause_type", "cause_text", "postmortem_url", "outlets", "links",
+    "first_seen", "last_updated", "notes",
 ]
 OPEN = {"watching", "store"}
 MAX_LINKS = 8
@@ -162,8 +163,9 @@ def _merge(row: dict, c: dict, text: str, changes: list[str]) -> None:
         row["max_reports"] = str(rep)
         changes.append(f"reports {rep:,}")
     dur = guess_duration(text)
-    if dur and dur > float(row["duration_hours"] or 0):
+    if dur and dur > float(row["duration_hours"] or 0) and row["duration_source"] != "you":
         row["duration_hours"] = f"{dur:g}"
+        row["duration_source"] = "news"
         changes.append(f"duration {dur:g} h")
     cause = guess_cause(text)
     if cause and not row["cause_type"]:
@@ -177,6 +179,41 @@ def _merge(row: dict, c: dict, text: str, changes: list[str]) -> None:
                 break
 
 
+def apply_updog(rows: list[dict], archive_rows: list[dict], service_terms: dict[str, list[str]], today: dt.date,
+                matcher) -> list[tuple[dict, list[str]]]:
+    """Attach Updog detections to open incidents of mapped services (same day ±1).
+
+    Records the match in `updog_match`, and fills `duration_hours` from Updog's measured window when
+    no duration is known yet (or the last one also came from Updog). Returns [(row, changes)].
+    """
+    updates = []
+    for r in rows:
+        terms = service_terms.get(r["service"])
+        if r["status"] not in OPEN or not terms:
+            continue
+        found = matcher(archive_rows, terms, dt.date.fromisoformat(r["incident_date"]))
+        if not found:
+            continue
+        found.sort(key=lambda u: u["start_utc"])
+        desc = " | ".join(f"{u['display_name']}{' ' + u['impacted_region'] if u['impacted_region'] else ''} "
+                          f"{u['start_utc'][5:16].replace('T', ' ')}–{u['end_utc'][11:16] if u['end_utc'] else 'ongoing'} UTC"
+                          for u in found[:4])
+        changes = []
+        if desc != r["updog_match"]:
+            r["updog_match"] = desc
+            changes.append(f"Updog: {len(found)} detection{'s' * (len(found) > 1)}")
+        mins = max((int(u["duration_minutes"]) for u in found if u["duration_minutes"]), default=0)
+        if mins and (not r["duration_hours"] or r["duration_source"] == "Updog"):
+            hours = f"{round(mins / 60, 1):g}"
+            if hours != r["duration_hours"]:
+                r["duration_hours"], r["duration_source"] = hours, "Updog"
+                changes.append(f"duration {hours} h (Updog)")
+        if changes:
+            r["last_updated"] = today.isoformat()
+            updates.append((r, changes))
+    return updates
+
+
 def due(rows: list[dict], today: dt.date) -> list[dict]:
     return [r for r in rows if r["status"] == "store" or (r["status"] == "watching" and r["store_after"]
                                                              and dt.date.fromisoformat(r["store_after"]) <= today)]
@@ -188,7 +225,9 @@ def to_outage_row(r: dict, ai_era_start: dt.date) -> dict:
     first_link = next((l for l in r["links"].split(" | ") if l), "")
     return {
         "date": r["incident_date"], "service": r["service"], "category": r["category"], "region": "Not stated",
-        "duration_hours": r["duration_hours"], "duration_note": "from news coverage" if r["duration_hours"] else "",
+        "duration_hours": r["duration_hours"],
+        "duration_note": ("measured by Updog (Datadog)" if r["duration_source"] == "Updog" else "from news coverage")
+                         if r["duration_hours"] else "",
         "reports": reports, "reports_type": "Peak (news)" if reports else "",
         "impact_note": f"Added by weekly scan from {r['sources']} source(s)" + (f"; {r['notes']}" if r["notes"] else ""),
         "cause_type": r["cause_type"] or "Not disclosed", "cause": r["cause_text"] or "Not disclosed",

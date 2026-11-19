@@ -1,0 +1,11 @@
+{"provider_data": [
+  {"provider_name": "cloudflare", "display_name": "Cloudflare", "outages": [
+    {"start": 1794715200000, "end": 1794724200000, "status": "resolved", "kind": "error",
+     "linked_status_page_incidents": [{"title": "Elevated errors on Cloudflare dashboard and API", "url": "https://www.cloudflarestatus.com/incidents/aaa"}]}
+  ]},
+  {"provider_name": "amazonaws", "display_name": "Amazon DynamoDB", "outages": [
+    {"start": 1795000000000, "status": "ongoing", "impacted_region": "us-east-1", "kind": "error+latency", "impacted_endpoints": ["GetItem", "PutItem"]},
+    {"start": 1787250300000, "end": 1787253000000, "status": "resolved"}
+  ]},
+  {"provider_name": "anthropic", "display_name": "Anthropic", "outages": []}
+]}

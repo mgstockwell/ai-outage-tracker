@@ -1,1 +1,6 @@
-{"api.gdeltproject.org": "gdelt.json", "news.google.com": "gnews.xml", "cloudflarestatus.com": "status.atom"}
+{
+ "api.gdeltproject.org": "gdelt.json",
+ "news.google.com": "gnews.xml",
+ "cloudflarestatus.com": "status.atom",
+ "updog.ai": "updog.json"
+}

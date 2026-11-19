@@ -25,6 +25,11 @@ Summary: https://creativecommons.org/licenses/by/4.0/
 
 > AI Outage Tracker dataset by Mark Stockwell, https://github.com/mgstockwell/ai-outage-tracker, licensed CC BY 4.0.
 
+## Not covered: `updog/`
+
+`data/updog/` is an archive of outage detections published by Updog by Datadog (https://updog.ai). That data
+belongs to Datadog and is **not** licensed under CC BY 4.0 by this project. See [`updog/README.md`](updog/README.md).
+
 ## What this license covers
 
 It covers this compilation: the selection, structure, labels (such as `cause_type` and `era`) and notes.
