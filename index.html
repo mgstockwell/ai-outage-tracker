@@ -12,27 +12,28 @@
 <div class="oa">
   <header id="top">
     <h1>Are outages getting worse in the AI era?</h1>
-    <p class="lede">Short answer: <b>not in how often they happen, but in how far they reach.</b> This set of <span class="num" data-draw="total" data-source="total">—</span> major consumer-facing outages (2018 – Nov 2026) shows the same root causes before and after ChatGPT's launch in November 2022, mostly changes and software bugs a company made to its own systems. What's new is concentration: the single biggest Downdetector events now come from shared providers (AWS, Cloudflare, CrowdStrike, banking processors), so one failure takes down banks, carriers and apps at once.</p>
+    <p class="live" id="live-status">Looking for what's down <em>right now</em>? <a href="https://updog.ai/" target="_blank" rel="noopener">Updog by Datadog</a> shows live health for 30+ SaaS providers and AWS services, measured from real traffic; <a href="https://downdetector.com/" target="_blank" rel="noopener">Downdetector</a> shows user reports. This page is the long-term history.</p>
+    <p class="lede">Short answer: <b data-draw="a-headline">—</b> <span data-draw="a-summary">—</span></p>
   </header>
 
   <section class="tiles" id="kpis">
     <div class="tile" id="kpi-largest">
       <div class="lbl">Largest outage in this set</div>
-      <div class="big"><span data-draw="largest-n" data-source="yearly" data-field="reports_millions" data-where="year=2025">—</span>M</div>
-      <div class="note">Downdetector reports, <span data-draw="largest-who" data-source="yearly" data-field="service" data-where="year=2025">—</span>, Oct 20 2025</div>
+      <div class="big" data-draw="a-largest-n">—</div>
+      <div class="note">Downdetector reports, <span data-draw="a-largest-who">—</span>, <span data-draw="a-largest-date">—</span></div>
     </div>
     <div class="tile" id="kpi-self">
       <div class="lbl">Caused by the company's own change or bug<br>(share of outages with a disclosed cause)</div>
       <div class="pair">
-        <div><small>Before AI era</small><span class="big" data-draw="self-pre" data-source="summary" data-field="self_share" data-where="era=Pre-AI">—</span></div>
-        <div><small>AI era</small><span class="big" data-draw="self-post" data-source="summary" data-field="self_share" data-where="era=AI era">—</span></div>
+        <div><small>Before AI era</small><span class="big" data-draw="self-pre">—</span></div>
+        <div><small>AI era</small><span class="big" data-draw="self-post">—</span></div>
       </div>
     </div>
     <div class="tile" id="kpi-vendor">
       <div class="lbl">Caused by a third-party vendor or shared provider<br>(share of outages with a disclosed cause)</div>
       <div class="pair">
-        <div><small>Before AI era</small><span class="big" data-draw="vendor-pre" data-source="summary" data-field="vendor_share" data-where="era=Pre-AI">—</span></div>
-        <div><small>AI era</small><span class="big" data-draw="vendor-post" data-source="summary" data-field="vendor_share" data-where="era=AI era">—</span></div>
+        <div><small>Before AI era</small><span class="big" data-draw="vendor-pre">—</span></div>
+        <div><small>AI era</small><span class="big" data-draw="vendor-post">—</span></div>
       </div>
     </div>
   </section>
@@ -70,14 +71,14 @@
 
   <div class="two">
     <section class="card" id="largest-card">
-      <h2>The biggest outage of each year keeps getting bigger</h2>
+      <h2 data-draw="a-yearly-title">The biggest outage of each year</h2>
       <p class="sub">Downdetector's largest single event per year, in millions of user reports. Report counts also grow as more people use Downdetector, so this measures reach, not frequency. 2020 has no published list; 2023, 2024 and 2026 (marked *) cover part of the year.</p>
       <div class="chart" data-draw="yearly" data-source="yearly" style="min-height:260px"></div>
     </section>
 
     <section class="card" id="cause-card">
-      <h2>Root causes barely changed, except vendors</h2>
-      <p class="sub">Share of outages with a publicly disclosed cause. Outages with no disclosed cause are left out (<span class="num" data-draw="undisc-pre" data-source="summary" data-field="undisclosed" data-where="era=Pre-AI">—</span> before, <span class="num" data-draw="undisc-post" data-source="summary" data-field="undisclosed" data-where="era=AI era">—</span> in the AI era).</p>
+      <h2 data-draw="a-causes-title">Root causes before and after</h2>
+      <p class="sub">Share of outages with a publicly disclosed cause. Outages with no disclosed cause are left out (<span class="num" data-draw="undisc-pre">—</span> before, <span class="num" data-draw="undisc-post">—</span> in the AI era).</p>
       <div class="chart" data-draw="causes" data-source="causeMix" style="min-height:200px"></div>
     </section>
   </div>
@@ -104,7 +105,7 @@
       <li>Gaming outages (PlayStation, Xbox, Roblox) are left out to keep the focus on everyday consumer platforms.</li>
     </ul>
   </details>
-  <p class="footer">Data: <a href="data/outages.csv">outages.csv</a> · <a href="data/yearly_largest.csv">yearly_largest.csv</a>, licensed <a href="data/LICENSE.md">CC BY 4.0</a>. Code: <a href="LICENSE">MIT</a>. Source and method: <a href="https://github.com/mgstockwell/ai-outage-tracker">github.com/mgstockwell/ai-outage-tracker</a>. Not affiliated with Downdetector or Ookla.</p>
+  <p class="footer">Data through <span data-draw="a-through">—</span>: <a href="data/outages.csv">outages.csv</a> · <a href="data/yearly_largest.csv">yearly_largest.csv</a>, licensed <a href="data/LICENSE.md">CC BY 4.0</a>. Code: <a href="LICENSE">MIT</a>. Source and method: <a href="https://github.com/mgstockwell/ai-outage-tracker">github.com/mgstockwell/ai-outage-tracker</a>. Not affiliated with Downdetector or Ookla.</p>
 </div>
 <script src="vendor/d3.min.js"></script>
 <script src="assets/dash-shim.js"></script>

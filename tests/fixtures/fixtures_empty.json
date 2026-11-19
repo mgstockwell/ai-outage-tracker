@@ -1,0 +1,6 @@
+{
+ "api.gdeltproject.org": "gdelt_empty.json",
+ "news.google.com": "empty.xml",
+ "cloudflarestatus.com": "empty.xml",
+ "updog.ai": "updog_week2.json"
+}

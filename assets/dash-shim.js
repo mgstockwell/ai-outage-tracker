@@ -5,6 +5,7 @@
   const SOURCES = {
     outages: 'data/outages.json',
     yearly: 'data/yearly_largest.json',
+    analysis: 'data/analysis.json',
   };
 
   const store = {};   // id -> {status, data, message}
@@ -19,7 +20,7 @@
     fetch(SOURCES[id], { cache: 'no-cache' })
       .then((r) => { if (!r.ok) throw new Error(r.status + ' ' + r.statusText); return r.json(); })
       .then((json) => {
-        const rows = Array.isArray(json) ? json : (json.rows || json.data || []);
+        const rows = Array.isArray(json) ? json : (json.rows || json);
         store[id] = { status: 'ok', data: rows };
       })
       .catch((e) => { store[id] = { status: 'error', data: [], message: String(e) }; console.error('Failed to load', id, e); })

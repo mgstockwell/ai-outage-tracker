@@ -2,8 +2,8 @@
 
 Copyright (c) 2026 Mark Stockwell
 
-The dataset in this folder (`outages.csv`, `outages.json`, `yearly_largest.csv`, `yearly_largest.json`
-and the files under `candidates/`) is licensed under the
+The dataset in this folder (`outages.csv`, `outages.json`, `yearly_largest.csv`, `yearly_largest.json`,
+`analysis.json`, `tracking.csv` and the files under `candidates/`) is licensed under the
 **Creative Commons Attribution 4.0 International License**.
 
 Full legal text: https://creativecommons.org/licenses/by/4.0/legalcode
@@ -24,6 +24,11 @@ Summary: https://creativecommons.org/licenses/by/4.0/
 ## Suggested credit
 
 > AI Outage Tracker dataset by Mark Stockwell, https://github.com/mgstockwell/ai-outage-tracker, licensed CC BY 4.0.
+
+## Not covered: `updog/`
+
+`data/updog/` is an archive of outage detections published by Updog by Datadog (https://updog.ai). That data
+belongs to Datadog and is **not** licensed under CC BY 4.0 by this project. See [`updog/README.md`](updog/README.md).
 
 ## What this license covers
 

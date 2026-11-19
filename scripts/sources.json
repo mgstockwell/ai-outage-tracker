@@ -1,8 +1,13 @@
 {
   "_comment": "Config for scripts/gather_sources.py. Edit freely: add services, aliases, queries or status feeds. Any source that fails is logged and skipped.",
   "lookback_days": 7,
+  "watch_days": 21,
+  "_watch_days": "How long a new outage stays on the watch list (data/tracking.csv) collecting updates before it is stored in data/outages.csv.",
+  "max_follow_ups": 15,
   "user_agent": "ai-outage-tracker/1.0 (+https://github.com/mgstockwell/ai-outage-tracker)",
   "outage_keywords": ["outage", "outages", "down", "disruption", "disrupted", "not working", "went dark", "service issues", "problems", "glitch", "offline", "restored"],
+  "exclude_sources": ["Facebook", "Instagram", "YouTube", "TikTok", "X", "Reddit", "LinkedIn", "Threads", "MSN"],
+  "_exclude_sources": "Publisher names (from Google News) or domains to ignore: social-media posts, aggregators.",
   "exclude_keywords": ["scheduled maintenance", "power outage map", "weather", "hurricane", "storm", "earnings call", "stock is down", "shares down", "down payment", "downgrade"],
 
   "services": {
@@ -64,7 +69,8 @@
     "_doc": "GDELT DOC 2.0 API (free, no key): https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/ . Max 1 request per ~5 seconds.",
     "endpoint": "https://api.gdeltproject.org/api/v2/doc/doc",
     "max_records": 250,
-    "pause_seconds": 6,
+    "pause_seconds": 15,
+    "retries": 3,
     "queries": [
       "downdetector (outage OR down) sourcelang:english",
       "outage (bank OR banking OR Zelle) sourcelang:english",
@@ -93,6 +99,26 @@
       "Microsoft 365 outage",
       "ChatGPT outage"
     ]
+  },
+
+  "updog": {
+    "enabled": true,
+    "_doc": "Archives https://updog.ai/data/third-party-outages.json weekly into data/updog/. providers_for_service maps a service name above to words found in Updog provider names, so watched outages can be matched to Updog detections.",
+    "providers_for_service": {
+      "AWS": ["amazon", "aws"],
+      "Cloudflare": ["cloudflare"],
+      "Google Cloud": ["google cloud"],
+      "Microsoft Azure": ["azure"],
+      "ChatGPT": ["openai"],
+      "Claude": ["anthropic"],
+      "Gemini": ["gemini"],
+      "PayPal": ["paypal"],
+      "Stripe": ["stripe"],
+      "Shopify": ["shopify"],
+      "Square": ["square"],
+      "Fastly": ["fastly"],
+      "Akamai": ["akamai"]
+    }
   },
 
   "status_feeds": [

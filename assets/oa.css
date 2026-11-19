@@ -36,3 +36,5 @@
 .oa details { font-size: var(--cds-font-size-body); line-height: 1.55; }
 .oa details summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); }
 .oa details li { margin-bottom: 6px; }
+.oa .live { margin: var(--cds-gap-sm) 0 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-sm) var(--cds-pad-md); max-width: 62rem; }
+.oa .live a { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
